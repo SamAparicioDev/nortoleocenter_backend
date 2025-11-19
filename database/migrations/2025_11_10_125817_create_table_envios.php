@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('finca_id')->constrained()->onDelete('cascade');
             $table->foreignId('lote_id')->nullable()->constrained()->onDelete('set null');
             $table->string('codigo_envio')->unique();
-            $table->date('fecha_envio');
+            $table->datetime('fecha_envio');
             $table->enum('estado',['pendiente','enviado','recibido'])->default('pendiente');
             $table->decimal('peso_kg');
             $table->text('observaciones')->nullable();
