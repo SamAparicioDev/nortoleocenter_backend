@@ -100,7 +100,7 @@ class RecepcionController extends Controller
     $user = $request->user();
 
     // Solo admin y empleado pueden actualizar
-    if (! in_array($user->rol, ['admin', 'empleado'])) {
+    if (! in_array($user->rol, ['admin'])) {
         return response()->json(['message' => 'No autorizado.'], 403);
     }
 
