@@ -37,7 +37,9 @@ class Recepcion extends Model
 
             // Calcular kg perdidos
             if ($recepcion->envio) {
+                // EL FIX AQUÍ ↓
                 $pesoOriginal = floatval($recepcion->envio->peso_kg);
+
                 $recepcion->total_kg_perdidos = max($pesoOriginal - $pesoRecibido, 0);
             }
 
