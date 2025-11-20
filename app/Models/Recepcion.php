@@ -2,11 +2,8 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
-use App\Models\Envio;
 
 class Recepcion extends Model
 {
@@ -25,36 +22,31 @@ class Recepcion extends Model
     ];
 
     protected static function boot()
-{
-    parent::boot();
+    {
+        parent::boot();
 
-    static::saving(function ($recepcion) {
+        static::saving(function ($recepcion) {
 
-        // Calcular total (ya lo tenías)
-        $precio = floatval($recepcion->precio_kg);
-        $peso = floatval($recepcion->peso_recibido_kg);
+            // Calcular total de dinero
+            $precio = floatval($recepcion->precio_kg);
+            $pesoRecibido = floatval($recepcion->peso_recibido_kg);
 
-        if ($precio > 0 && $peso > 0) {
-            $recepcion->total = $precio * $peso;
-        }
-
-        // Calcular total_kg_perdidos automáticamente
-        if (!empty($recepcion->envio_id) && !empty($recepcion->peso_recibido_kg)) {
-            $envio = Envio::find($recepcion->envio_id);
-
-            if ($envio) {
-                $recepcion->total_kg_perdidos = $envio->peso - $recepcion->peso_recibido_kg;
+            if ($precio > 0 && $pesoRecibido > 0) {
+                $recepcion->total = $precio * $pesoRecibido;
             }
-        }
 
-        // Fecha por defecto
-        if (empty($recepcion->fecha_recepcion)) {
-            $recepcion->fecha_recepcion = Carbon::now();
-        }
-    });
-}
+            // Calcular kg perdidos
+            if ($recepcion->envio) {
+                $pesoOriginal = floatval($recepcion->envio->peso);
+                $recepcion->total_kg_perdidos = max($pesoOriginal - $pesoRecibido, 0);
+            }
 
-
+            // Fecha recepción por defecto
+            if (empty($recepcion->fecha_recepcion)) {
+                $recepcion->fecha_recepcion = now();
+            }
+        });
+    }
 
     public function empleado()
     {
