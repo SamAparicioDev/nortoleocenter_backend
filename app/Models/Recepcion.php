@@ -21,25 +21,39 @@ class Recepcion extends Model
         'fecha_recepcion',
         'empleado_id',
         'peso_recibido_kg',
+        'total_kg_perdidos',
     ];
 
     protected static function boot()
-    {
-        parent::boot();
+{
+    parent::boot();
 
-        static::saving(function ($recepcion) {
-            $precio = floatval($recepcion->precio_kg);
-            $peso = floatval($recepcion->peso_recibido_kg);
+    static::saving(function ($recepcion) {
 
-            if ($precio > 0 && $peso > 0) {
-                $recepcion->total = $precio * $peso;
+        // Calcular total (ya lo tenías)
+        $precio = floatval($recepcion->precio_kg);
+        $peso = floatval($recepcion->peso_recibido_kg);
+
+        if ($precio > 0 && $peso > 0) {
+            $recepcion->total = $precio * $peso;
+        }
+
+        // Calcular total_kg_perdidos automáticamente
+        if (!empty($recepcion->envio_id) && !empty($recepcion->peso_recibido_kg)) {
+            $envio = Envio::find($recepcion->envio_id);
+
+            if ($envio) {
+                $recepcion->total_kg_perdidos = $envio->peso - $recepcion->peso_recibido_kg;
             }
+        }
 
-            if (empty($recepcion->fecha_recepcion)) {
-                $recepcion->fecha_recepcion = Carbon::now();
-            }
-        });
-    }
+        // Fecha por defecto
+        if (empty($recepcion->fecha_recepcion)) {
+            $recepcion->fecha_recepcion = Carbon::now();
+        }
+    });
+}
+
 
 
     public function empleado()

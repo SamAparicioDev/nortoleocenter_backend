@@ -27,7 +27,7 @@ class RecepcionController extends Controller
         $user = $request->user();
 
         if ($user->rol !== 'productor' && $user->rol !== 'admin') {
-            return response()->json(['message' => 'Solo productores y los administradores pueden ver sus recepciones.'], 403);
+            return response()->json(['message' => 'Solo productores y administradores pueden ver sus recepciones.'], 403);
         }
 
         $recepciones = Recepcion::whereHas('envio', function ($query) use ($user) {
@@ -73,7 +73,6 @@ class RecepcionController extends Controller
     {
         $user = $request->user();
 
-        // Buscar la recepción por ID
         $recepcion = Recepcion::with(['empleado', 'envio.productor', 'envio.finca', 'envio.lote'])
             ->find($id);
 
@@ -81,11 +80,9 @@ class RecepcionController extends Controller
             return response()->json(['message' => 'Recepción no encontrada.'], 404);
         }
 
-        // Autorización según rol
-        if ($user->rol === 'productor') {
-            if (! $recepcion->envio || $recepcion->envio->productor_id !== $user->id) {
-                return response()->json(['message' => 'No autorizado.'], 403);
-            }
+        if ($user->rol === 'productor' &&
+            $recepcion->envio->productor_id !== $user->id) {
+            return response()->json(['message' => 'No autorizado.'], 403);
         }
 
         if (! in_array($user->rol, ['admin', 'empleado', 'productor'])) {
@@ -95,52 +92,37 @@ class RecepcionController extends Controller
         return response()->json($recepcion);
     }
 
-   public function update(Request $request, $id)
-{
-    $user = $request->user();
+    public function update(Request $request, $id)
+    {
+        $user = $request->user();
 
-    // Solo admin y empleado pueden actualizar
-    if (! in_array($user->rol, ['admin'])) {
-        return response()->json(['message' => 'No autorizado.'], 403);
+        if (! in_array($user->rol, ['admin'])) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $recepcion = Recepcion::find($id);
+
+        if (! $recepcion) {
+            return response()->json(['message' => 'Recepción no encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'precio_kg' => 'numeric|min:0|nullable',
+            'peso_recibido_kg' => 'numeric|min:0|nullable',
+        ]);
+
+        $recepcion->fill($validated);
+
+        // El modelo recalcula total y total_kg_perdidos automáticamente
+        $recepcion->save();
+
+        $recepcion->load(['empleado', 'envio']);
+
+        return response()->json([
+            'message' => 'Recepción actualizada correctamente.',
+            'data' => $recepcion,
+        ]);
     }
-
-    // Buscar la recepción
-    $recepcion = Recepcion::find($id);
-
-    if (!$recepcion) {
-        return response()->json(['message' => 'Recepción no encontrada.'], 404);
-    }
-
-    // Validar los campos de entrada
-    $validated = $request->validate([
-        'precio_kg' => 'numeric|min:0|nullable',
-        'peso_recibido_kg' => 'numeric|min:0|nullable',
-    ]);
-
-    // Actualizar valores
-    $recepcion->fill($validated);
-
-    // Recalcular el total si cambió alguno de los dos valores
-    if (
-        isset($validated['precio_kg']) ||
-        isset($validated['peso_recibido_kg'])
-    ) {
-        $precio = $recepcion->precio_kg ?? 0;
-        $peso = $recepcion->peso_recibido_kg ?? 0;
-        $recepcion->total = $precio * $peso;
-    }
-
-    // Guardar cambios
-    $recepcion->save();
-
-    // Cargar relaciones
-    $recepcion->load(['empleado', 'envio']);
-
-    return response()->json([
-        'message' => 'Recepción actualizada correctamente.',
-        'data' => $recepcion,
-    ]);
-}
 
     public function destroy($id)
     {
