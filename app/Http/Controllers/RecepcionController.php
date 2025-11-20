@@ -40,34 +40,49 @@ class RecepcionController extends Controller
         return response()->json($recepciones);
     }
 
-    public function store(Request $request)
-    {
-        $user = $request->user();
+   public function store(Request $request)
+{
+    $user = $request->user();
 
-        if (! in_array($user->rol, ['admin', 'empleado'])) {
-            return response()->json(['message' => 'No autorizado.'], 403);
-        }
-
-        $validated = $request->validate([
-            'envio_id' => 'required|exists:envios,id',
-            'precio_kg' => 'required|numeric|min:0',
-            'peso_recibido_kg' => 'required|numeric|min:0',
-        ]);
-
-        $recepcion = Recepcion::create([
-            'envio_id' => $validated['envio_id'],
-            'empleado_id' => $user->id,
-            'precio_kg' => $validated['precio_kg'],
-            'peso_recibido_kg' => $validated['peso_recibido_kg'],
-        ]);
-
-        $recepcion->load(['empleado', 'envio']);
-
-        return response()->json([
-            'message' => 'Recepción registrada exitosamente.',
-            'data' => $recepcion,
-        ], 201);
+    if (! in_array($user->rol, ['admin', 'empleado'])) {
+        return response()->json(['message' => 'No autorizado.'], 403);
     }
+
+    $validated = $request->validate([
+        'envio_id' => 'required|exists:envios,id',
+        'precio_kg' => 'required|numeric|min:0',
+        'peso_recibido_kg' => 'required|numeric|min:0',
+    ]);
+
+    // Cargar el envío aquí (AHORA SÍ funciona)
+    $envio = \App\Models\Envio::find($validated['envio_id']);
+
+    // Calcular aquí
+    $precio = $validated['precio_kg'];
+    $pesoR = $validated['peso_recibido_kg'];
+    $pesoO = floatval($envio->peso_kg);
+
+    $total = $precio * $pesoR;
+    $kgPerdidos = max($pesoO - $pesoR, 0);
+
+    // Crear recepción con todos los datos listos
+    $recepcion = Recepcion::create([
+        'envio_id' => $envio->id,
+        'empleado_id' => $user->id,
+        'precio_kg' => $precio,
+        'peso_recibido_kg' => $pesoR,
+        'total' => $total,
+        'total_kg_perdidos' => $kgPerdidos,
+    ]);
+
+    $recepcion->load(['empleado', 'envio']);
+
+    return response()->json([
+        'message' => 'Recepción registrada exitosamente.',
+        'data' => $recepcion,
+    ], 201);
+}
+
 
     public function show($id, Request $request)
     {
