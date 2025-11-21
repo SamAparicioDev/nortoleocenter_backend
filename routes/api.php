@@ -25,7 +25,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('fincas', FincaController::class)->middleware('rol:admin,empleado,productor');
     Route::apiResource('lotes', LoteController::class)->middleware('rol:admin,empleado,productor');
     Route::apiResource('recepciones', RecepcionController::class)->middleware('rol:admin,empleado');
-    Route::apiResource('envios', EnvioController::class)->middleware('rol:admin,productor');
+    Route::apiResource('envios', EnvioController::class)->middleware('rol:admin,productor,empleado');
     Route::apiResource('usuarios', UserController::class);
     Route::get('/mis-recepciones', [RecepcionController::class, 'misRecepciones'])
         ->middleware('rol:empleado,admin');
