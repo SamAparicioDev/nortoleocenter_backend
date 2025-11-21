@@ -16,7 +16,7 @@ class EnvioController extends Controller
         $user = $request->user();
 
         // Solo admin o productor pueden acceder
-        if (! in_array($user->rol, ['admin', 'productor'])) {
+        if (! in_array($user->rol, ['admin', 'productor', 'empleado'])) {
             return response()->json(['message' => 'No autorizado.'], 403);
         }
 
